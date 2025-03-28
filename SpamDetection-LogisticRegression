@@ -1,0 +1,87 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sc
+
+from sklearn.preprocessing import LabelEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score,mean_absolute_error,mean_squared_error,r2_score
+
+data = {
+    "Email_Text": [
+        "Win a brand new iPhone! Click the link to claim your prize now.",
+        "Meeting at 3 PM tomorrow. Let me know if you can join.",
+        "Urgent! Your bank account is compromised. Verify immediately.",
+        "Hey, are we still on for lunch this Saturday?",
+        "Congratulations! You have won a lottery worth $10,000.",
+        "Don't forget about the team meeting scheduled for Friday.",
+        "Limited-time offer! Get 50% off on all electronics.",
+        "Can you review the report I sent earlier today?",
+        "Claim your free vacation now! Offer expires soon.",
+        "Please find attached the invoice for your recent purchase.",
+        "You have been selected for a special discount! Click here.",
+        "Reminder: Your subscription will expire in 3 days.",
+        "Congratulations! You've been selected for a free gift card.",
+        "Let's schedule a call to discuss the project details.",
+        "Earn money from home! No experience required. Sign up now.",
+        "Your flight booking is confirmed. Check your itinerary.",
+        "Get rich quick! Invest in this amazing opportunity today.",
+        "Can we reschedule our appointment for next week?",
+        "Exclusive deal: Buy one, get one free on all items!",
+        "Please update your billing information to avoid service interruption.",
+        "Thanks for your order! Your package will arrive soon.",
+        "Your credit card has been charged $500. Contact us for a refund.",
+        "Join us for the webinar on AI and Data Science this Friday.",
+        "Alert! Suspicious login detected on your account. Act now.",
+        "Happy Birthday! Enjoy a special discount just for you.",
+        "Last chance! Claim your free Bitcoin before it expires.",
+        "The monthly newsletter is out! Check the latest updates.",
+        "You are a lucky winner! Claim your reward before midnight.",
+        "Your password has been changed successfully.",
+        "Flash Sale! 70% off on all fashion items today only.",
+        "Your bank statement is ready. View it securely online.",
+        "Your order has been shipped and is on its way!",
+        "Investment opportunity: Earn 5x returns in just one year!",
+        "Confirm your email address to activate your account.",
+        "Act fast! Limited seats left for our premium workshop.",
+        "Your insurance policy renewal is due next week.",
+        "You're invited! Exclusive networking event for professionals.",
+        "You've received a secure message. Click here to view it.",
+        "Increase your credit score fast with this simple trick!",
+        "Welcome to our platform! Get started with these tips."
+    ],
+    "Label": [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 
+              1, 0, 1, 0, 1, 0, 1, 0, 1, 1,
+              0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+              0, 0, 1, 0, 1, 0, 0, 1, 1, 0]
+}
+
+df=pd.DataFrame(data)
+data_convert=TfidfVectorizer()
+x=data_convert.fit_transform(df['Email_Text'])
+y=df['Label']
+
+x_train,x_test,y_train,y_test=train_test_split(x,y,random_state=42,test_size=0.25)
+model=LogisticRegression()
+model.fit(x_train,y_train)
+
+y_train_predict=model.predict(x_train)
+y_test_predict=model.predict(x_test)
+
+
+acc_score_train=accuracy_score(y_train,y_train_predict)
+acc_score_test=accuracy_score(y_test,y_test_predict)
+# print(acc_score_train)
+
+
+my_mail=['Congratulations! You Won $100000']
+my_mail_tfid=data_convert.transform(my_mail)
+predict=model.predict(my_mail_tfid)
+
+if(predict==1):
+  print("it is a SPAM")
+else:
+  print("it is not a spam")  

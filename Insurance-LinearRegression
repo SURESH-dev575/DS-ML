@@ -34,11 +34,10 @@ for i in cols:
 
   df=df[(df[i]>=lb) & (df[i]<=ub)]
   
-
-# for i in cols:
-#   plt.boxplot(df[i])
-#   plt.show()      
-# df
+for i in cols:
+   plt.boxplot(df[i])
+   plt.show()      
+df
 
 
 #ML MODELS

@@ -1,0 +1,60 @@
+print('HIERARCHICAL CLUSTERING')
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sc
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import AgglomerativeClustering
+import scipy.cluster.hierarchy as sch
+
+data=pd.read_csv('driver-data.csv')
+data.drop_duplicates(inplace=True)
+data.dropna(inplace=True)
+df=data.copy()
+df.drop('id',axis=1,inplace=True)
+stsc=StandardScaler()
+df=stsc.fit_transform(df)
+df1=pd.DataFrame(df,columns=['mean_day','mean_over_spped'])
+print(int(np.mean(df1['mean_day'])))
+print(int(np.std(df1['mean_day'])))
+
+dend=sch.dendrogram(sch.linkage(df1,method='ward'))
+plt.show()
+dend=sch.dendrogram(sch.linkage(df1,method='single'))
+plt.show()
+dend=sch.dendrogram(sch.linkage(df1,method='complete'))
+plt.show()
+dend=sch.dendrogram(sch.linkage(df1,method='average'))
+plt.show()
+
+print('IMPLEMENT GOOD K VALUE')
+
+model=AgglomerativeClustering(n_clusters=4)
+model.fit(df1)
+print(model.labels_)
+new_data=model.labels_
+data['new_data']=new_data
+data
+
+
+print('IMPLEMETNING THE SUPERWIESD DATA TO THE UNSUPERWISED DATA')
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+st=StandardScaler()
+x_data=data.drop('new_data',axis=1)
+x=st.fit_transform(x_data)
+print(int(np.mean(x[:,0])))
+print(int(np.std(x[:,0],ddof=1)))
+y=data['new_data']
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+model=KNeighborsRegressor(n_neighbors=3)
+model.fit(x_train,y_train)
+y_pred=model.predict(x_test)
+print(r2_score(y_test,y_pred))
+my_data = [[3423313724, 64.54, 27]]
+my_data_scaled = st.transform(my_data)  
+result = model.predict(my_data_scaled)
+print("Predicted Cluster:", round(result[0]))
+

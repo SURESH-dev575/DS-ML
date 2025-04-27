@@ -1,0 +1,62 @@
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sc
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+data=pd.read_csv('driver-data.csv')
+
+df=data.copy(deep=True)
+df.drop_duplicates(inplace=True)
+df.dropna(inplace=True)
+df.drop('id',axis=1,inplace=True)
+stsc=StandardScaler()
+df=stsc.fit_transform(df)
+df1=pd.DataFrame(df,columns=['mean_day','mean_over_spped'])
+print(int(np.mean(df1['mean_day'])))
+print(int(np.std(df1['mean_day'])))
+
+
+k=[]
+from sklearn.cluster import KMeans
+for i in range(1,5):
+  model=KMeans(n_clusters=i)
+  model.fit(df1)
+  k.append(model.inertia_)
+
+  print(i,model.labels_)
+  print(i,model.inertia_)
+  print(i,model.cluster_centers_)
+
+
+plt.plot(range(1,5),k,color='red',marker='o')
+plt.xlabel('k')
+plt.show()
+
+model=KMeans(n_clusters=3,random_state=42,init='k-means++')
+model.fit(df1)
+
+df_result=pd.DataFrame(model.labels_,columns=['data_result'])
+data = pd.concat([data, df_result], axis=1)
+print(data)
+
+
+# plt.scatter(model.cluster_centers_[:,0],model.cluster_centers_[:,1],cmap='blue', marker='X', s=200,)
+# plt.scatter(df1['mean_day'],df1['mean_over_spped'],c=model.labels_)
+# plt.figure(figsize=(8, 6))
+plt.scatter(df1['mean_day'], df1['mean_over_spped'], c=model.labels_, cmap='viridis', s=50, alpha=0.6, label='Data Points')
+
+# Plot cluster centers
+plt.scatter(model.cluster_centers_[:, 0], model.cluster_centers_[:, 1], c='red', marker='X', s=500, label='Centroids')
+plt.show()
+
+
+print('USER INPUT DATA')
+input_features = np.array([[176.17, 5]])
+d=stsc.transform(input_features)
+result=model.predict(d)
+print(result)

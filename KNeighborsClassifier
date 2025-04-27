@@ -1,0 +1,35 @@
+print('K NEIGHBOUS IMPLEMENTATION')
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sc
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+
+data=pd.read_csv('heart.csv')
+data.drop_duplicates(inplace=True)
+data.dropna(inplace=True)
+
+for i in data.columns:
+  if data[i].dtype=='object':
+    data[i]=le.fit_transform(data[i])
+
+x=data.drop('target',axis=1)
+y=data['target']
+
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+scc=StandardScaler()
+x_stand_scalar=scc.fit_transform(x_train)
+x_test_stand_scalar=scc.transform(x_test)
+model=KNeighborsClassifier(n_neighbors=3)
+model.fit(x_stand_scalar,y_train)
+
+pre=model.predict(x_test_stand_scalar)
+print(accuracy_score(y_test,pre))
+print(data.to_string())
+user_data=[[41, 1, 2, 130, 214, 0, 0, 168, 0, 2.0, 1, 0, 2]]
+user_data_scaled=scc.transform(user_data)
+result=model.predict(user_data_scaled)
+print(result)

@@ -1,0 +1,90 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.tree import DecisionTreeClassifier
+
+data = pd.read_csv('customer_churn_.csv')
+print("Initial shape:", data.shape)
+
+data.drop_duplicates(inplace=True)
+data.dropna(inplace=True)
+
+if 'customerID' in data.columns:
+    data.drop('customerID', axis=1, inplace=True)
+
+le = LabelEncoder()
+for col in data.columns:
+    if data[col].dtype == 'object':
+        data[col] = le.fit_transform(data[col])
+
+y = data['Churn']
+X = data.drop('Churn', axis=1)
+
+original_index = X.index
+for col in X.select_dtypes(include=np.number).columns:
+    q1 = X[col].quantile(0.25)
+    q3 = X[col].quantile(0.75)
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+    mask = (X[col] >= lower_bound) & (X[col] <= upper_bound)
+    X = X[mask]
+    original_index = X.index.intersection(original_index)
+
+X = X.loc[original_index]
+y = y.loc[original_index]
+
+print("Shape after cleaning:", X.shape)
+print("Churn distribution after cleaning:\n", y.value_counts())
+
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+print("y_test class distribution:\n", y_test.value_counts())
+dt=DecisionTreeClassifier(random_state=42)
+dt.fit(x_train,y_train)
+y_pred=dt.predict(x_test)
+print(accuracy_score(y_pred,y_test))
+
+
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
+
+pca = PCA(n_components=5)
+x_train_pca = pca.fit_transform(x_train)
+x_test_pca = pca.transform(x_test)
+
+plt.figure(figsize=(6,4))
+plt.plot(np.cumsum(PCA().fit(x_train).explained_variance_ratio_), marker='o')
+plt.title("PCA Explained Variance")
+plt.xlabel("Number of Components")
+plt.ylabel("Cumulative Variance")
+plt.grid(True)
+plt.show()
+
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(x_train_pca, y_train)
+y_pred = dt.predict(x_test_pca)
+
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+lr=LogisticRegression()
+lr.fit(x_train_pca,y_train)
+y_pred=lr.predict(x_test_pca)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+rf=RandomForestClassifier()
+rf.fit(x_train_pca,y_train)
+y_pred=rf.predict(x_test_pca)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))

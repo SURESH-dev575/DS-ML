@@ -1,0 +1,101 @@
+print('REDUCING DIMENTONALITY USING THE LDA SUPERWISED LEARNING')
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis 
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+data = pd.read_csv('customer_churn_.csv')
+data.drop_duplicates(inplace=True)
+data.dropna(inplace=True)
+print('DATA AFTER CEANING')
+print(data)
+
+columns=data.columns
+le=LabelEncoder()
+for i in data.columns:
+  if data[i].dtype=='object':
+    data[i]=le.fit_transform(data[i])
+
+data_copy=data.copy()
+for i in columns:
+  if i=='Churn':
+    continue
+  q1=data_copy[i].quantile(0.25)
+  q3=data_copy[i].quantile(0.75)
+
+  qdif=q3-q1
+  lb=q1-(1.5*qdif)
+  ub=q3+(1.5*qdif)
+
+  data_copy=data_copy[(data_copy[i]>=lb) & (data_copy[i]<=ub)]
+
+print('REMOVE AFTER THE OUTLAYERS')
+for i in data_copy.columns:
+  plt.boxplot(data_copy[i])
+  plt.show()
+
+
+print(data_copy.shape)
+data_copy.drop('customerID', axis=1, inplace=True)
+x=data_copy.drop('Churn',axis=1)
+y=data_copy['Churn']
+
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42,stratify=y)
+
+sc=StandardScaler()
+x_train=sc.fit_transform(x_train)
+x_test=sc.transform(x_test)
+
+lr=LogisticRegression()
+lr.fit(x_train,y_train)
+y_pred=lr.predict(x_test)
+print(accuracy_score(y_test,y_pred))
+
+
+dt=DecisionTreeClassifier()
+dt.fit(x_train,y_train)
+y_pred=dt.predict(x_test)
+print(accuracy_score(y_test,y_pred))
+
+rf=RandomForestClassifier()
+rf.fit(x_train,y_train)
+y_pred=rf.predict(x_test)
+print(accuracy_score(y_test,y_pred))
+
+
+lda=LinearDiscriminantAnalysis(n_components=1)
+x_train_lda = lda.fit_transform(x_train, y_train)
+x_test_lda = lda.transform(x_test)
+
+
+print('LOGISTIC REGRESSION')
+lr=LogisticRegression()
+lr.fit(x_train_lda,y_train)
+y_pred=lr.predict(x_test_lda)
+print(accuracy_score(y_test,y_pred))
+
+print('DECISION TRESS CLASSIFER')
+dt=DecisionTreeClassifier()
+dt.fit(x_train_lda,y_train)
+y_pred=dt.predict(x_test_lda)
+print(accuracy_score(y_test,y_pred))
+
+print('RANDOM FOREST CLASSIFIER')
+rf=RandomForestClassifier()
+rf.fit(x_train_lda,y_train)
+y_pred=rf.predict(x_test_lda)
+print(accuracy_score(y_test,y_pred))
+
+print('HERE LDA TECHNIQUE IS NO GARUENTEE TO INCREASE THE ACUURACY SCORE IT IS ONY RESDUCING THE DIMENTONALITY')
+print("CLASS SEPERATOIN USING THE TECHNIQUE")
+   

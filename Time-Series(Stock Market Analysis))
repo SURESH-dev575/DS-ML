@@ -2,86 +2,88 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sc
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
-data=pd.read_csv('/content/AirPassengers (1).csv')
+# Load and clean data
+data = pd.read_csv('/content/AirPassengers (1).csv')
 data.dropna(inplace=True)
 data.drop_duplicates(inplace=True)
 
-data.columns=['Month_data','Passingers']
-data['Month_data'].value_counts()
+# Rename columns
+data.columns = ['Month_data', 'Passengers']
+data['Month_data'] = pd.to_datetime(data['Month_data'])
 
-data['Month_data']=pd.to_datetime(data['Month_data'])
+# Set index
+data.set_index('Month_data', inplace=True)
 
-data.index=data['Month_data']
-
-data.drop('Month_data',axis=1,inplace=True)
-
-
-from statsmodels.tsa.stattools import adfuller
-test_result=adfuller(data['Passingers'])
-print('ADF Statistic: %f' % test_result[0])
-print('p-value: %f' % test_result[1])
-
-if test_result[1] <= 0.05:
-    print('The series is stationary')
+# ADF test - check stationarity
+result = adfuller(data['Passengers'])
+print('ADF Statistic:', result[0])
+print('p-value:', result[1])
+if result[1] <= 0.05:
+    print("✅ The series is stationary")
 else:
-    print('The series is non-stationary')
+    print("❌ The series is non-stationary")
 
-rolling_mean=data.rolling(window=12).mean()
-data_dupli=data-rolling_mean
-print(data_dupli.shape)
+# Differencing to make stationary
+rolling_mean = data.rolling(window=12).mean()
+data_diff = data - rolling_mean
+data_diff.dropna(inplace=True)
 
-mean=data_dupli.rolling(window=12).mean()
-std=data_dupli.rolling(window=12).std()
-plt.plot(data_dupli,color='blue',label='Original')
-plt.plot(mean,color='red',label='Rolling Mean')
-plt.plot(std,color='black',label='Rolling Std')
+# Plot rolling mean & std
+mean = data_diff.rolling(window=12).mean()
+std = data_diff.rolling(window=12).std()
+plt.figure(figsize=(10,6))
+plt.plot(data_diff, color='blue', label='Original - Rolling Mean')
+plt.plot(mean, color='red', label='Rolling Mean')
+plt.plot(std, color='black', label='Rolling Std')
 plt.legend(loc='best')
+plt.title('Stationarity Check')
 plt.show()
 
-
-data_dupli.shape
-print(data_dupli)
-data_dupli.dropna(inplace=True)
-print(data_dupli.shape)
-
-pred=adfuller(data_dupli['Passingers'])
-print('ADF Statistic: %f' % pred[0])
-print('p-value: %f' % pred[1])
-if pred[1] <= 0.05:
-    print('The series is stationary')
+# ADF test after differencing
+result2 = adfuller(data_diff['Passengers'])
+print('ADF Statistic (after differencing):', result2[0])
+print('p-value:', result2[1])
+if result2[1] <= 0.05:
+    print("✅ The series is now stationary")
 else:
-    print('The series is non-stationary')
+    print("❌ The series is still non-stationary")
 
+# Split into train and test
+train = data_diff.iloc[:120]
+test = data_diff.iloc[120:]
 
-train = data_dupli[:120]
-test = data_dupli[120:]
+# Build SARIMAX model
+model = SARIMAX(train,
+                order=(3,0,2),
+                seasonal_order=(3,0,2,12),
+                enforce_stationarity=False,
+                enforce_invertibility=False)
+model_fit = model.fit()
 
+# Forecast
+pred = model_fit.predict(start=len(train), end=len(train)+len(test)-1)
+data_diff.loc[test.index, 'prediction'] = pred
 
-print(train)
-print(test)
-model_fit=model.fit()
-data_dupli['prediction']=model_fit.predict(start=len(train),end=len(train)+len(test)-1)
-data_dupli
-
-data_dupli[['Passingers','prediction']].plot(figsize=(8,6))
-
-
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-
-sr_model=SARIMAX(train,order=(3,0,2),seasonal_order=(3,0,2,12),dynamic=False)
-sr_model_fit=sr_model.fit()
-
-pre=sr_model_fit.predict(start=len(train),end=len(train)+len(test)-1)
-print(pre)
-
-data_dupli['Passingers'].plot()
-pre.plot()
-more_data_predict=sr_model_fit.get_forecast(1950)
-prediction=more_data_predict.predicted_mean
-prediction
-
-data_dupli['Passingers'].plot()
-prediction.plot()
+# Plot prediction vs actual
+plt.figure(figsize=(10,6))
+plt.plot(data_diff['Passengers'], label='Actual')
+plt.plot(data_diff['prediction'], label='Predicted', linestyle='--')
 plt.legend()
+plt.title('SARIMAX Forecast on Differenced Data')
+plt.show()
+
+# Forecast future values (on differenced scale)
+forecast_steps = 24
+future_forecast = model_fit.get_forecast(steps=forecast_steps)
+future_pred = future_forecast.predicted_mean
+
+# Plot full forecast
+plt.figure(figsize=(10,6))
+plt.plot(data_diff['Passengers'], label='Historical')
+future_pred.plot(label='Future Forecast', color='green')
+plt.legend()
+plt.title('Future Forecast using SARIMAX')
 plt.show()

@@ -1,0 +1,47 @@
+import pandas as pd
+import numpy as np
+import seaborn as sc
+import matplotlib.pyplot as plt
+
+df=pd.read_csv('/content/Covid_19_Clean_Complete (2).csv')
+df['Province/State'].fillna('sample',inplace=True)
+# df.head(50)
+df.rename(columns={'Province/State': 'State', 'Country/Region': 'country'}, inplace=True)
+df
+
+data_grouped=df.groupby(['Date'])[['Confirmed',	'Deaths'	,'Recovered',	'Active']].sum()
+data_grouped
+
+data_grouped['Dates']=data_grouped.index
+data_grouped.reset_index(drop=True,inplace=True)
+data_grouped
+
+first_prd=data_grouped[['Dates','Confirmed']]
+first_pred=first_prd.rename(columns={'Dates':'ds','Confirmed':'y'})
+first_pred.plot()
+first_pred.shape
+
+# !pip install prophet
+
+from prophet import Prophet
+model=Prophet()
+model.fit(first_pred)
+pred=model.make_future_dataframe(periods=120)
+data_pred=model.predict(pred)
+data_pred
+
+data_pred.columns
+data=data_pred[['yhat_lower','yhat','yhat_upper']]
+data['yhat'].plot()
+
+deaths_data=data_grouped[['Dates','Deaths']]
+deaths_data=deaths_data.rename(columns={'Dates':'ds','Deaths':'y'})
+deaths_data.plot()
+deaths_data.shape
+from prophet import Prophet
+model=Prophet()
+model.fit(deaths_data)
+pred=model.make_future_dataframe(periods=120)
+data_pred=model.predict(pred)
+ploting=data_pred[['yhat_lower','yhat','yhat_upper']]
+ploting['yhat'].plot()
